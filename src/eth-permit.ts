@@ -82,7 +82,7 @@ const getTokenName = async (provider: any, address: string) =>
   hexToUtf8((await call(provider, address, NAME_FN)).substr(130));
 
 
-const getDomain = async (provider: any, token: string | Domain): Promise<Domain> => {
+const getDomain = async (provider: any, token: string | Domain, version: string = '1'): Promise<Domain> => {
   if (typeof token !== 'string') {
     return token as Domain;
   }
@@ -94,7 +94,7 @@ const getDomain = async (provider: any, token: string | Domain): Promise<Domain>
     getChainId(provider),
   ]);
 
-  const domain: Domain = { name, version: '1', chainId, verifyingContract: tokenAddress };
+  const domain: Domain = { name, version, chainId, verifyingContract: tokenAddress };
   return domain;
 };
 
@@ -105,6 +105,7 @@ export const signDaiPermit = async (
   spender: string,
   expiry?: number,
   nonce?: number,
+  version?: string,
 ): Promise<DaiPermitMessage & RSV> => {
   const tokenAddress = (token as Domain).verifyingContract || token as string;
 
@@ -116,7 +117,7 @@ export const signDaiPermit = async (
     allowed: true,
   };
 
-  const domain = await getDomain(provider, token);
+  const domain = await getDomain(provider, token, version);
   const typedData = createTypedDaiData(message, domain);
   const sig = await signData(provider, holder, typedData);
 
