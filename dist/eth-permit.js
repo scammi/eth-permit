@@ -85,7 +85,7 @@ exports.signDaiPermit = (provider, token, holder, spender, expiry, nonce, versio
     const sig = yield rpc_1.signData(provider, holder, typedData);
     return Object.assign(Object.assign({}, sig), message);
 });
-exports.signERC2612Permit = (provider, token, owner, spender, value = MAX_INT, deadline, nonce) => __awaiter(void 0, void 0, void 0, function* () {
+exports.signERC2612Permit = (provider, token, owner, spender, value = MAX_INT, deadline, nonce, version) => __awaiter(void 0, void 0, void 0, function* () {
     const tokenAddress = token.verifyingContract || token;
     const message = {
         owner,
@@ -94,7 +94,7 @@ exports.signERC2612Permit = (provider, token, owner, spender, value = MAX_INT, d
         nonce: nonce === undefined ? yield rpc_1.call(provider, tokenAddress, `${NONCES_FN}${zeros(24)}${owner.substr(2)}`) : nonce,
         deadline: deadline || MAX_INT,
     };
-    const domain = yield getDomain(provider, token);
+    const domain = yield getDomain(provider, token, version);
     const typedData = createTypedERC2612Data(message, domain);
     const sig = yield rpc_1.signData(provider, owner, typedData);
     return Object.assign(Object.assign({}, sig), message);
