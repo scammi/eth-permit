@@ -132,6 +132,7 @@ export const signERC2612Permit = async (
   value: string | number = MAX_INT,
   deadline?: number,
   nonce?: number,
+  version?: string,
 ): Promise<ERC2612PermitMessage & RSV> => {
   const tokenAddress = (token as Domain).verifyingContract || token as string;
 
@@ -143,7 +144,7 @@ export const signERC2612Permit = async (
     deadline: deadline || MAX_INT,
   };
 
-  const domain = await getDomain(provider, token);
+  const domain = await getDomain(provider, token, version);
   const typedData = createTypedERC2612Data(message, domain);
   const sig = await signData(provider, owner, typedData);
 
