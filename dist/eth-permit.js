@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getERC2612PermitTypeData = exports.signERC2612Permit = exports.signDaiPermit = void 0;
+exports.signERC2612Permit = exports.signDaiPermit = exports.createTypedERC2612Data = void 0;
 const rpc_1 = require("./rpc");
 const lib_1 = require("./lib");
 const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -37,7 +37,7 @@ const createTypedDaiData = (message, domain) => {
     };
     return typedData;
 };
-const createTypedERC2612Data = (message, domain) => {
+exports.createTypedERC2612Data = (message, domain) => {
     const typedData = {
         types: {
             EIP712Domain,
@@ -95,20 +95,7 @@ exports.signERC2612Permit = (provider, token, owner, spender, value = MAX_INT, d
         deadline: deadline || MAX_INT,
     };
     const domain = yield getDomain(provider, token, version);
-    const typedData = createTypedERC2612Data(message, domain);
+    const typedData = exports.createTypedERC2612Data(message, domain);
     const sig = yield rpc_1.signData(provider, owner, typedData);
     return Object.assign(Object.assign({}, sig), message);
-});
-exports.getERC2612PermitTypeData = (provider, token, owner, spender, value = MAX_INT, deadline, nonce, version) => __awaiter(void 0, void 0, void 0, function* () {
-    const tokenAddress = token.verifyingContract || token;
-    const message = {
-        owner,
-        spender,
-        value,
-        nonce: nonce === undefined ? yield rpc_1.call(provider, tokenAddress, `${NONCES_FN}${zeros(24)}${owner.substr(2)}`) : nonce,
-        deadline: deadline || MAX_INT,
-    };
-    const domain = yield getDomain(provider, token, version);
-    const typedData = createTypedERC2612Data(message, domain);
-    return Object.assign({ typedData }, message);
 });

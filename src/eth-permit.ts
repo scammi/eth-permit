@@ -53,7 +53,7 @@ const createTypedDaiData = (message: DaiPermitMessage, domain: Domain) => {
   return typedData;
 };
 
-const createTypedERC2612Data = (message: ERC2612PermitMessage, domain: Domain) => {
+export const createTypedERC2612Data = (message: ERC2612PermitMessage, domain: Domain) => {
   const typedData = {
     types: {
       EIP712Domain,
@@ -150,30 +150,3 @@ export const signERC2612Permit = async (
 
   return { ...sig, ...message };
 };
-
-export const getERC2612PermitTypeData = async (
-  provider: any,
-  token: string | Domain,
-  owner: string,
-  spender: string,
-  value: string | number = MAX_INT,
-  deadline?: number,
-  nonce?: number,
-  version?: string,
-): Promise<ERC2612PermitMessage & any> => {
-  const tokenAddress = (token as Domain).verifyingContract || token as string;
-
-  const message: ERC2612PermitMessage = {
-    owner,
-    spender,
-    value,
-    nonce: nonce === undefined ? await call(provider, tokenAddress, `${NONCES_FN}${zeros(24)}${owner.substr(2)}`) : nonce,
-    deadline: deadline || MAX_INT,
-  };
-
-  const domain = await getDomain(provider, token, version);
-  const typedData = createTypedERC2612Data(message, domain);
-
-  return { typedData, ...message };
-};
-
