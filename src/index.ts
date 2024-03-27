@@ -1,9 +1,8 @@
 import { getChainId, call, signData, RSV } from './rpc';
 import { hexToUtf8 } from './lib';
-import { gelatoEIP712DomainTypeData, getGelatoRequestStruct } from './gelato';
-import { EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA } from './gelato';
 import { EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
 import { ethers } from 'ethers';
+import { getGaslessTxToSign } from './gelato';
 
 const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
@@ -212,18 +211,3 @@ export async function buildPaymentTransaction(
   );
 }
 
-const getGaslessTxToSign = async (
-  chain: number,
-  contractAddress: string,
-  provider: any,
-  metaTxToSign: { functionName: string; func: string; parameters: any[] },
-  deadline: number,
-): Promise<EIP712<IGelatoStruct>> =>{
-  const domain = gelatoEIP712DomainTypeData(chain);
-
-  const types = { ...EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA };
-
-  const value = await getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);
-
-  return { domain, types, value };
-}

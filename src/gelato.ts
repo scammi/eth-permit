@@ -1,7 +1,7 @@
 import ethers, { BigNumber, Contract } from 'ethers';
 import gelatoAbi from './gelato-abi';
 import { Interface } from 'ethers/lib/utils';
-import { IGelatoStruct } from './types';
+import { EIP712, IGelatoStruct } from './types';
 
 export function gelatoEIP712DomainTypeData(chain: number) {
     return {
@@ -61,3 +61,21 @@ export async function getGelatoRequestStruct(
 
     return gelatoRequestStruct;
 }
+
+
+export const getGaslessTxToSign = async (
+    chain: number,
+    contractAddress: string,
+    provider: any,
+    metaTxToSign: { functionName: string; func: string; parameters: any[] },
+    deadline: number,
+  ): Promise<EIP712<IGelatoStruct>> =>{
+    const domain = gelatoEIP712DomainTypeData(chain);
+  
+    const types = { ...EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA };
+  
+    const value = await getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);
+  
+    return { domain, types, value };
+  }
+  

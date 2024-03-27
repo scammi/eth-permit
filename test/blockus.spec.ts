@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { buildPaymentTransaction, getSignERC20Permit, signERC2612Permit } from '../src/eth-permit';
+import { buildPaymentTransaction, getSignERC20Permit, signERC2612Permit } from '../src';
 import { expect } from 'chai';
 
 const spender = '0x0000000000000000000000000000000000000002';
@@ -40,9 +40,10 @@ describe('Payment intention construction', () => {
     it('Creates permit type data', async() => {
       const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
       const wallet = new ethers.Wallet(privateKey, provider);
-      
+      const buyersAddress = await wallet.getAddress();
+
       const permitTypeData = await getSignERC20Permit(
-        '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
+        buyersAddress,
         intent,
         wallet
       );
@@ -50,6 +51,31 @@ describe('Payment intention construction', () => {
       expect(permitTypeData).to.haveOwnProperty('domain')
       expect(permitTypeData).to.haveOwnProperty('types')
       expect(permitTypeData).to.haveOwnProperty('value')
+    });
+
+    it ('Complete flow example', async() => {
+      const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
+      const wallet = new ethers.Wallet(privateKey, provider);
+      const buyersAddress = await wallet.getAddress();
+
+      // 1. GETS PAYMENT INTENTION
+
+      // Creates permit type data
+      const permitTypeData = await getSignERC20Permit(
+        buyersAddress,
+        intent,
+        wallet
+      );
+
+      // Signs 
+      const permitSignature = await wallet.signTypedData(
+        permit.domain,
+        permit.types,
+        permit.value,
+    );      
+
+
+
     });
 });
 
