@@ -2,7 +2,7 @@ import { getChainId, call, signData, RSV } from './rpc';
 import { hexToUtf8 } from './lib';
 import { gelatoEIP712DomainTypeData, getGelatoRequestStruct } from './gelato';
 import { EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA } from './gelato';
-import { EIP712, IGelatoStruct } from './types';
+import { EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
 import { ethers } from 'ethers';
 
 const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -36,26 +36,6 @@ const EIP712Domain = [
   { name: "chainId", type: "uint256" },
   { name: "verifyingContract", type: "address" },
 ];
-
-const createTypedDaiData = (message: DaiPermitMessage, domain: Domain) => {
-  const typedData = {
-    types: {
-      EIP712Domain,
-      Permit: [
-        { name: "holder", type: "address" },
-        { name: "spender", type: "address" },
-        { name: "nonce", type: "uint256" },
-        { name: "expiry", type: "uint256" },
-        { name: "allowed", type: "bool" },
-      ],
-    },
-    primaryType: "Permit",
-    domain,
-    message,
-  };
-
-  return typedData;
-};
 
 export const createTypedERC2612Data = (message: ERC2612PermitMessage, domain: Domain) => {
   const typedData = {
@@ -100,32 +80,6 @@ const getDomain = async (provider: any, token: string | Domain, version: string 
 
   const domain: Domain = { name, version, chainId, verifyingContract: tokenAddress };
   return domain;
-};
-
-export const signDaiPermit = async (
-  provider: any,
-  token: string | Domain,
-  holder: string,
-  spender: string,
-  expiry?: number,
-  nonce?: number,
-  version?: string,
-): Promise<DaiPermitMessage & RSV> => {
-  const tokenAddress = (token as Domain).verifyingContract || token as string;
-
-  const message: DaiPermitMessage = {
-    holder,
-    spender,
-    nonce: nonce === undefined ? await call(provider, tokenAddress, `${NONCES_FN}${zeros(24)}${holder.substr(2)}`) : nonce,
-    expiry: expiry || MAX_INT,
-    allowed: true,
-  };
-
-  const domain = await getDomain(provider, token, version);
-  const typedData = createTypedDaiData(message, domain);
-  const sig = await signData(provider, holder, typedData);
-
-  return { ...sig, ...message };
 };
 
 export const signERC2612Permit = async (
@@ -179,7 +133,36 @@ export const getERC2612PermitTypeData = async (
   const typedData = createTypedERC2612Data(message, domain);
 
   return typedData ;
+
 };
+
+export async function getSignERC20Permit(
+  buyerAddress: string,
+  paymentIntentResponse:any,
+  provider: any
+): Promise<Erc20PermitToSign> {
+
+  const chain = paymentIntentResponse.chain;
+  const contractAddress = paymentIntentResponse.contractAddress;
+  const deadline: bigint = paymentIntentResponse.parameters['deadline'];
+  const tokenAddress: string = paymentIntentResponse.parameters['paymentTokenAddress'];
+  const amount: bigint = paymentIntentResponse.parameters['totalPrice'];
+
+  if (!amount) throw new Error("No Amount set");
+  
+  const typeData = await getERC2612PermitTypeData(
+    provider,
+    tokenAddress,
+    buyerAddress,
+    contractAddress,
+    Number(amount),
+    Number(deadline)
+  );
+
+  const permitType = { Permit: typeData.types.Permit }
+
+  return { domain: typeData.domain, types: permitType, value: typeData.message };
+}
 
 export async function buildPaymentTransaction(
   permitSignature: string,
@@ -191,7 +174,7 @@ export async function buildPaymentTransaction(
   const functionName:string = paymentIntentResponse.functionName;
   const func = paymentIntentResponse.functionSignature;
   const chain = paymentIntentResponse.chain;
-  const deadline = paymentIntentResponse.deadline;
+  const deadline = paymentIntentResponse.parameters.deadline;
 
   const splitPermitSignature = ethers.utils.splitSignature(permitSignature);
 
