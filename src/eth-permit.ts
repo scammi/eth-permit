@@ -203,10 +203,10 @@ export async function buildPaymentTransaction(
 
   const orderPropertiesToExtract = [
      'paymentTokenAddress',
-      'fromAddress',
-      'transfers',
-      'totalPrice',
-      'deadline',
+     'fromAddress',
+     'transfers',
+     'totalPrice',
+     'deadline',
   ]
 
   const distributionParams: any[] = [];

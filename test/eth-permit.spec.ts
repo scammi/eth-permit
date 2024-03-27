@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { defaultSender, provider, web3, contract } from '@openzeppelin/test-environment';
 import { ethers } from 'ethers';
-import { signDaiPermit, signERC2612Permit } from '../src/eth-permit';
+import { buildPaymentTransaction, signDaiPermit, signERC2612Permit } from '../src/eth-permit';
 import { setChainIdOverride } from '../src/rpc';
 import { getGelatoRequestStruct } from '../src/gelato';
 
@@ -82,7 +82,7 @@ describe('ETH permit', () => {
 
     it ('Create gelato getGelatoRequestStruct', async () => {
 
-      const provider = ethers.;
+      const provider = ethers.getDefaultProvider(137);
       const wallet = new ethers.Wallet(privateKey, provider);
 
       const splitter = '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399';
@@ -100,6 +100,36 @@ describe('ETH permit', () => {
       );
 
       console.log(struct);
+    });
+
+    it.only('Builds payment intention', async () => {
+      const intent = {
+        chain: 137,
+        parameters: {
+            paymentTokenAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
+            fromAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
+            totalPrice: BigInt('100'),
+            transfers: [['0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399', BigInt('100')]],
+            deadline: 100,
+        },
+        contractAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
+        functionName: 'distributeTokensWithPermit',
+        functionSignature: 'function distributeTokensWithPermit(address,address,(address,uint256)[],uint256,uint256,uint8,bytes32,bytes32)',
+      };
+
+      const permitSig = '0xdd82062cb06d9d81fa0d71d7e5ebdf4f67506d9b270826dcd1ccc1dd83fe5aa17849d6bfeaba01f291d5bfbfba4b358f665b0914c512258edda41e47898793c21b'
+
+      const provider = new ethers.providers.JsonRpcProvider('https://polygon-mainnet.g.alchemy.com/v2/acXApar89jnfg6txILDNH8s7ZnZdCQ5C', 137);
+
+      const wallet = new ethers.Wallet(privateKey, provider);
+
+      const toBeSign = await buildPaymentTransaction(
+        permitSig,
+        intent,
+        wallet
+      );
+
+      console.log(toBeSign);
     });
   });
 });
