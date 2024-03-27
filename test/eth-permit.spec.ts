@@ -3,6 +3,7 @@ import { defaultSender, provider, web3, contract } from '@openzeppelin/test-envi
 import { ethers } from 'ethers';
 import { signDaiPermit, signERC2612Permit } from '../src/eth-permit';
 import { setChainIdOverride } from '../src/rpc';
+import getSignatureDataERC2771 from '@gelatonetwork/relay-sdk';
 
 const spender = '0x0000000000000000000000000000000000000002';
 const privateKey = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -78,5 +79,9 @@ describe('ETH permit', () => {
 
       expect(await token.methods.allowance(address, spender).call()).to.equal(value);
     })
+
+    it ('Create gelato signature', async () => {
+    });
   });
 });
+

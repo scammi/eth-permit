@@ -1,5 +1,8 @@
 import { getChainId, call, signData, RSV } from './rpc';
 import { hexToUtf8 } from './lib';
+import { gelatoEIP712DomainTypeData, getGelatoRequestStruct } from './gelato';
+import { EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA } from './gelato';
+import { EIP712, IGelatoStruct } from './types';
 
 const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
@@ -177,3 +180,62 @@ export const getERC2612PermitTypeData = async (
   return typedData ;
 };
 
+export async function buildPaymentTransaction(
+  buyersAddress: string,
+  permitSignature: string,
+  paymentIntentResponse:PaymentIntentResponse,
+  provider,
+): Promise<EIP712<IGelatoStruct>> {
+
+   const contractAddress = paymentIntentResponse.contractAddress;
+   const functionName:string = paymentIntentResponse.functionName;
+   const func = paymentIntentResponse.functionSignature;
+   const chain = paymentIntentResponse.chain;
+
+   const splitPermitSignature = Signature.from(permitSignature);
+
+   const permitTransactionParams = [
+      splitPermitSignature.v,
+      splitPermitSignature.r,
+      splitPermitSignature.s,
+   ];
+
+   const orderPropertiesToExtract = [
+       'paymentTokenAddress',
+       'fromAddress',
+       'transfers',
+       'totalPrice',
+       'deadline',
+   ]
+
+   const distributionParams: any[] = [];
+   orderPropertiesToExtract.forEach(key => {
+       // Check if the property exists in the object
+       if (paymentIntentResponse.parameters.hasOwnProperty(key)) {
+           // Retrieve the value and push it into the orderedParams array
+           distributionParams.push(paymentIntentResponse.parameters[key]);
+       }
+   });
+
+   return await getGaslessTxToSign(
+      chain,
+      contractAddress,
+      pro
+   );
+}
+
+const getGaslessTxToSign = async (
+  chain: number,
+  contractAddress: string,
+  provider: any,
+  metaTxToSign: { functionName: string; func: string; parameters: any[] } | string,
+  deadline: number,
+): Promise<EIP712<IGelatoStruct>> =>{
+  const domain = gelatoEIP712DomainTypeData(chain);
+
+  const types = { ...EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA };
+
+  const value = await getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);
+
+  return { domain, types, value };
+}
