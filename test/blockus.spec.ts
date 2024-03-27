@@ -1,6 +1,7 @@
-import { ethers } from 'ethers';
+import { TypedDataDomain, ethers } from 'ethers';
 import { buildPaymentTransaction, getSignERC20Permit, signERC2612Permit } from '../src';
 import { expect } from 'chai';
+import { EIP712, IGelatoStruct } from '../src/types';
 
 const spender = '0x0000000000000000000000000000000000000002';
 const privateKey = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -11,7 +12,7 @@ const intent = {
       fromAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
       totalPrice: BigInt('100'),
       transfers: [['0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399', BigInt('100')]],
-      deadline: 100,
+      deadline: BigInt('100'),
   },
   contractAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
   functionName: 'distributeTokensWithPermit',
@@ -47,34 +48,49 @@ describe('Payment intention construction', () => {
         intent,
         wallet
       );
-
       expect(permitTypeData).to.haveOwnProperty('domain')
       expect(permitTypeData).to.haveOwnProperty('types')
       expect(permitTypeData).to.haveOwnProperty('value')
     });
 
-    it ('Complete flow example', async() => {
-      const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
+    it('Complete flow example', async() => {
+      const provider = new ethers.providers.JsonRpcProvider('https://polygon-mumbai.g.alchemy.com/v2/9tHtWGoVgCRyxFyjItzHpN2DDzEKH8xT', 137);
       const wallet = new ethers.Wallet(privateKey, provider);
       const buyersAddress = await wallet.getAddress();
 
       // 1. GETS PAYMENT INTENTION
 
-      // Creates permit type data
+      // 2. Creates permit type data
       const permitTypeData = await getSignERC20Permit(
         buyersAddress,
         intent,
         wallet
       );
 
-      // Signs 
-      const permitSignature = await wallet.signTypedData(
-        permit.domain,
-        permit.types,
-        permit.value,
-    );      
+      // 3. Get permit signature 
+      const permitSignature = await wallet._signTypedData(
+        permitTypeData.domain as TypedDataDomain,
+        permitTypeData.types,
+        permitTypeData.value,
+      );      
 
 
+      // Constructs payment transaction
+      const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
+        buyersAddress,
+        permitSignature,
+        intent
+      );
+    
+      // Sign meta transaction for token distribution.
+      const distributeTokenSignature = await wallet._signTypedData(
+          paymentMetaTransaction.domain as TypedDataDomain,
+          paymentMetaTransaction.types,
+          paymentMetaTransaction.value,
+      );
+
+      const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
+      console.log({ distributeTokenSignature, permitSignature, metaTxDeadline });
 
     });
 });

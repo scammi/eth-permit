@@ -57,5 +57,5 @@ export interface TypedDataField {
 export type Erc20PermitToSign = {
     types: Record<string, Array<TypedDataField>>;
     value: Record<string, any>;
-    domain?: TypedDataDomain;
+    domain: TypedDataDomain;
 };

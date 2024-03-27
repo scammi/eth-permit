@@ -154,7 +154,7 @@ export async function getSignERC20Permit(
     tokenAddress,
     buyerAddress,
     contractAddress,
-    Number(amount),
+    amount.toString(),
     Number(deadline)
   );
 
