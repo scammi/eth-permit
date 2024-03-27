@@ -54,9 +54,11 @@ describe('Payment intention construction', () => {
     });
 
     it('Complete flow example', async() => {
-      const provider = new ethers.providers.JsonRpcProvider('https://polygon-mumbai.g.alchemy.com/v2/9tHtWGoVgCRyxFyjItzHpN2DDzEKH8xT', 137);
+      const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
       const wallet = new ethers.Wallet(privateKey, provider);
       const buyersAddress = await wallet.getAddress();
+
+      // WIP Still works need to be done to acomodate ethers v6 providers.
 
       // 1. GETS PAYMENT INTENTION
 
