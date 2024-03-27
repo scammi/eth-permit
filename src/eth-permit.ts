@@ -3,6 +3,7 @@ import { hexToUtf8 } from './lib';
 import { gelatoEIP712DomainTypeData, getGelatoRequestStruct } from './gelato';
 import { EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA } from './gelato';
 import { EIP712, IGelatoStruct } from './types';
+import { ethers } from 'ethers';
 
 const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
@@ -181,54 +182,58 @@ export const getERC2612PermitTypeData = async (
 };
 
 export async function buildPaymentTransaction(
-  buyersAddress: string,
   permitSignature: string,
-  paymentIntentResponse:PaymentIntentResponse,
-  provider,
+  paymentIntentResponse: any,
+  provider: any,
 ): Promise<EIP712<IGelatoStruct>> {
 
-   const contractAddress = paymentIntentResponse.contractAddress;
-   const functionName:string = paymentIntentResponse.functionName;
-   const func = paymentIntentResponse.functionSignature;
-   const chain = paymentIntentResponse.chain;
+  const contractAddress = paymentIntentResponse.contractAddress;
+  const functionName:string = paymentIntentResponse.functionName;
+  const func = paymentIntentResponse.functionSignature;
+  const chain = paymentIntentResponse.chain;
+  const deadline = paymentIntentResponse.deadline;
 
-   const splitPermitSignature = Signature.from(permitSignature);
+  const splitPermitSignature = ethers.utils.splitSignature(permitSignature);
 
-   const permitTransactionParams = [
-      splitPermitSignature.v,
-      splitPermitSignature.r,
-      splitPermitSignature.s,
-   ];
+  const permitTransactionParams = [
+     splitPermitSignature.v,
+     splitPermitSignature.r,
+     splitPermitSignature.s,
+  ];
 
-   const orderPropertiesToExtract = [
-       'paymentTokenAddress',
-       'fromAddress',
-       'transfers',
-       'totalPrice',
-       'deadline',
-   ]
+  const orderPropertiesToExtract = [
+     'paymentTokenAddress',
+      'fromAddress',
+      'transfers',
+      'totalPrice',
+      'deadline',
+  ]
 
-   const distributionParams: any[] = [];
-   orderPropertiesToExtract.forEach(key => {
-       // Check if the property exists in the object
-       if (paymentIntentResponse.parameters.hasOwnProperty(key)) {
-           // Retrieve the value and push it into the orderedParams array
-           distributionParams.push(paymentIntentResponse.parameters[key]);
-       }
-   });
+  const distributionParams: any[] = [];
+  orderPropertiesToExtract.forEach(key => {
+      // Check if the property exists in the object
+      if (paymentIntentResponse.parameters.hasOwnProperty(key)) {
+          // Retrieve the value and push it into the orderedParams array
+          distributionParams.push(paymentIntentResponse.parameters[key]);
+      }
+  });
 
-   return await getGaslessTxToSign(
-      chain,
-      contractAddress,
-      pro
-   );
+  const functionCall =  { functionName, func, parameters: [ ...distributionParams, ...permitTransactionParams ] };
+
+  return getGaslessTxToSign(
+    chain,
+    contractAddress,
+    provider,
+    functionCall,
+    deadline 
+  );
 }
 
 const getGaslessTxToSign = async (
   chain: number,
   contractAddress: string,
   provider: any,
-  metaTxToSign: { functionName: string; func: string; parameters: any[] } | string,
+  metaTxToSign: { functionName: string; func: string; parameters: any[] },
   deadline: number,
 ): Promise<EIP712<IGelatoStruct>> =>{
   const domain = gelatoEIP712DomainTypeData(chain);

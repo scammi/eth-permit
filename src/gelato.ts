@@ -1,4 +1,4 @@
-import ethers, { BigNumber } from 'ethers';
+import ethers, { BigNumber, Contract } from 'ethers';
 import gelatoAbi from './gelato-abi';
 import { Interface } from 'ethers/lib/utils';
 import { IGelatoStruct } from './types';
@@ -29,27 +29,25 @@ export async function getGelatoRequestStruct(
     provider: any,
     chainId: number,
     target: string,
-    metaTxToSign: { functionName: string; func: string; parameters: any[] } | string,
+    metaTxToSign: { functionName: string; func: string; parameters: any[] },
     deadline: number,
 ): Promise<IGelatoStruct> {
     const signerAddress = await provider.getAddress();
     const relayerAddress = GELATO_RELAY_ADDRESS;
-    const gelatoRelayerContract = new ethers.Contract(relayerAddress, gelatoAbi);
+
+    const gelatoRelayerContract = new Contract(relayerAddress, gelatoAbi);
     const contract = gelatoRelayerContract.connect(provider);
     const userNonce: BigNumber = BigNumber.from(
         await (contract as any).userNonce(await provider.getAddress()),
     );
-
-    let data: string;
-    if (typeof metaTxToSign === 'string' || metaTxToSign instanceof String) {
-        data = metaTxToSign as string;
-    } else {
-        try {
-            const iface = new Interface([metaTxToSign.func]);
-            data = iface.encodeFunctionData(metaTxToSign.functionName, metaTxToSign.parameters);
-        } catch (e) {
-            console.log(e);
-        }
+    
+    let data;
+    try {
+        const iface = new Interface([metaTxToSign.func]);
+        data = iface.encodeFunctionData(metaTxToSign.functionName, metaTxToSign.parameters);
+    } catch (e) {
+        console.log(e);
+        throw new Error('could not create data');
     }
 
     const gelatoRequestStruct: IGelatoStruct = {

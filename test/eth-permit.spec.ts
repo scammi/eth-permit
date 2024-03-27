@@ -3,7 +3,7 @@ import { defaultSender, provider, web3, contract } from '@openzeppelin/test-envi
 import { ethers } from 'ethers';
 import { signDaiPermit, signERC2612Permit } from '../src/eth-permit';
 import { setChainIdOverride } from '../src/rpc';
-import getSignatureDataERC2771 from '@gelatonetwork/relay-sdk';
+import { getGelatoRequestStruct } from '../src/gelato';
 
 const spender = '0x0000000000000000000000000000000000000002';
 const privateKey = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -80,7 +80,26 @@ describe('ETH permit', () => {
       expect(await token.methods.allowance(address, spender).call()).to.equal(value);
     })
 
-    it ('Create gelato signature', async () => {
+    it ('Create gelato getGelatoRequestStruct', async () => {
+
+      const provider = ethers.;
+      const wallet = new ethers.Wallet(privateKey, provider);
+
+      const splitter = '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399';
+      const functionName = 'transfer';
+      const func = 'function transfer(address to, uint256 value) external returns (bool)';
+      const parameters = [splitter, 100];
+
+      const metaTx = { functionName, func, parameters } 
+      const struct = await getGelatoRequestStruct(
+        wallet,
+        137,
+        splitter,
+        metaTx,
+        100
+      );
+
+      console.log(struct);
     });
   });
 });
