@@ -67,6 +67,7 @@ const buyersAddress = await signer.getAddress();
 
 // GETS PAYMENT INTENTION FROM BLOCKUS
 const listingId = 'arqB2clzH46oehy59eXIc4PNHFKA';
+// https://api.blockus.net/api-docs/swagger/index.html#/Marketplace%20listings/getPaymentIntent
 const paymentIntent = await blockus.getPaymentIntent(listingId);
 
 // Creates permit type data
@@ -109,6 +110,7 @@ const executeBody = {
     "metaTransactionDeadline": metaTxDeadline
 }
 
+// https://api.blockus.net/api-docs/swagger/index.html#/Marketplace%20listings/executeListing
 axios.post(`${blockusEndpoint}/v1/marketplace/listings/${listingId}/execute`, executeBody)
   .then((response) => {
     console.log('Response:', response.data);
