@@ -1,6 +1,5 @@
-import ethers, { BigNumber, Contract } from 'ethers';
+import { Contract, Interface } from 'ethers';
 import gelatoAbi from './gelato-abi';
-import { Interface } from 'ethers/lib/utils';
 import { EIP712, IGelatoStruct } from './types';
 
 export function gelatoEIP712DomainTypeData(chain: number) {
@@ -8,7 +7,7 @@ export function gelatoEIP712DomainTypeData(chain: number) {
         name: 'GelatoRelay1BalanceERC2771',
         version: '1',
         verifyingContract: GELATO_RELAY_ADDRESS,
-        chain,
+        chainId: chain,
     };
 }
 
@@ -25,21 +24,21 @@ export const EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA = {
     ],
 };
 
+export const DEFAULT_DEADLINE_GAP = 86_400;
+
 export async function getGelatoRequestStruct(
     provider: any,
     chainId: number,
     target: string,
     metaTxToSign: { functionName: string; func: string; parameters: any[] },
-    deadline: number,
+    deadline?: number,
 ): Promise<IGelatoStruct> {
     const signerAddress = await provider.getAddress();
     const relayerAddress = GELATO_RELAY_ADDRESS;
 
     const gelatoRelayerContract = new Contract(relayerAddress, gelatoAbi);
     const contract = gelatoRelayerContract.connect(provider);
-    const userNonce: BigNumber = BigNumber.from(
-        await (contract as any).userNonce(await provider.getAddress()),
-    );
+    const userNonce: bigint = await (contract as any).userNonce(await provider.getAddress());
     
     let data;
     try {
@@ -55,20 +54,19 @@ export async function getGelatoRequestStruct(
         target: target,
         data: data,
         user: signerAddress,
-        userNonce: userNonce.toNumber(),
-        userDeadline: deadline,
+        userNonce: Number(userNonce),
+        userDeadline: deadline ?? calculateDeadline(DEFAULT_DEADLINE_GAP),
     };
 
     return gelatoRequestStruct;
 }
-
 
 export const getGaslessTxToSign = async (
     chain: number,
     contractAddress: string,
     provider: any,
     metaTxToSign: { functionName: string; func: string; parameters: any[] },
-    deadline: number,
+    deadline?: number,
   ): Promise<EIP712<IGelatoStruct>> =>{
     const domain = gelatoEIP712DomainTypeData(chain);
   
@@ -77,5 +75,8 @@ export const getGaslessTxToSign = async (
     const value = await getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);
   
     return { domain, types, value };
-  }
-  
+}
+
+function calculateDeadline(gap: number): number {
+    return Math.floor(Date.now() / 1000) + gap;
+}

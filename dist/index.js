@@ -12,9 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildPaymentTransaction = exports.getSignERC20Permit = exports.getERC2612PermitTypeData = exports.signERC2612Permit = exports.createTypedERC2612Data = void 0;
 const rpc_1 = require("./rpc");
 const lib_1 = require("./lib");
-const gelato_1 = require("./gelato");
-const gelato_2 = require("./gelato");
 const ethers_1 = require("ethers");
+const gelato_1 = require("./gelato");
 const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const EIP712Domain = [
     { name: "name", type: "string" },
@@ -92,7 +91,7 @@ function getSignERC20Permit(buyerAddress, paymentIntentResponse, provider) {
         const amount = paymentIntentResponse.parameters['totalPrice'];
         if (!amount)
             throw new Error("No Amount set");
-        const typeData = yield exports.getERC2612PermitTypeData(provider, tokenAddress, buyerAddress, contractAddress, Number(amount), Number(deadline));
+        const typeData = yield exports.getERC2612PermitTypeData(provider, tokenAddress, buyerAddress, contractAddress, amount.toString(), Number(deadline));
         const permitType = { Permit: typeData.types.Permit };
         return { domain: typeData.domain, types: permitType, value: typeData.message };
     });
@@ -127,13 +126,7 @@ function buildPaymentTransaction(permitSignature, paymentIntentResponse, provide
             }
         });
         const functionCall = { functionName, func, parameters: [...distributionParams, ...permitTransactionParams] };
-        return getGaslessTxToSign(chain, contractAddress, provider, functionCall, deadline);
+        return gelato_1.getGaslessTxToSign(chain, contractAddress, provider, functionCall, deadline);
     });
 }
 exports.buildPaymentTransaction = buildPaymentTransaction;
-const getGaslessTxToSign = (chain, contractAddress, provider, metaTxToSign, deadline) => __awaiter(void 0, void 0, void 0, function* () {
-    const domain = gelato_1.gelatoEIP712DomainTypeData(chain);
-    const types = Object.assign({}, gelato_2.EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA);
-    const value = yield gelato_1.getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);
-    return { domain, types, value };
-});
