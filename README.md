@@ -7,9 +7,8 @@ This function is responsible for generating permit data required for ERC-2612 (p
 ```js
 const permitTypeData = await getSignERC20Permit(
     buyersAddress,
-    intent, // Response from /v1/marketplace/listings/{id}/payment-intent
-    signer // Ethers js signer / wallet
-);
+    paymentIntent,
+    signer
 
 const permitSignature = await signer.signTypedData(
     permitTypeData.domain,
@@ -25,8 +24,8 @@ This function constructs a meta transaction for payment purposes. A meta transac
 ```js
 const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
     permitSignature, // Permit type data signature 
-    intent, // Response from /v1/marketplace/listings/{id}/payment-intent
-    signer // Ethers js signer / wallet
+    paymentIntent, 
+    signer
 );
 ```
 
@@ -58,7 +57,7 @@ const signature = await signer.signTypedData(
 
 ## Usage
 
-This is mean to be soon an SDK, and you will be able to import the needed functions. In the mean while code can be copied or used are reference. Important code is within the `index.ts` and `gelato.ts` files.
+This is meant to be soon an SDK, and you will be able to import the needed functions. In the mean time code can be copied or used are reference. Important code is within the `index.ts` and `gelato.ts` files.
 
 ```js
 const provider = new ethers.BrowserProvider(window.ethereum);
@@ -73,11 +72,11 @@ const paymentIntent = await blockus.getPaymentIntent(listingId);
 const permitTypeData = await getSignERC20Permit(
     buyersAddress,
     intent,
-    wallet
+    signer
 );
 
 // Get permit signature 
-const permitSignature = await wallet.signTypedData(
+const permitSignature = await signer.signTypedData(
     permitTypeData.domain,
     permitTypeData.types,
     permitTypeData.value,
@@ -87,11 +86,11 @@ const permitSignature = await wallet.signTypedData(
 const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
     permitSignature,
     intent,
-    wallet
+    signer
 );
 
 // Sign meta transaction for token distribution.
-const distributeTokenSignature = await wallet.signTypedData(
+const distributeTokenSignature = await signer.signTypedData(
     paymentMetaTransaction.domain,
     paymentMetaTransaction.types,
     paymentMetaTransaction.value,
@@ -118,4 +117,5 @@ axios.post(`${blockusEndpoint}/v1/marketplace/listings/${listingId}/execute`, bo
 
 ## Further Reading
 https://eips.ethereum.org/EIPS/eip-712
+
 https://eips.ethereum.org/EIPS/eip-2612
