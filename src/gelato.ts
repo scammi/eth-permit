@@ -24,12 +24,14 @@ export const EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA = {
     ],
 };
 
+export const DEFAULT_DEADLINE_GAP = 86_400;
+
 export async function getGelatoRequestStruct(
     provider: any,
     chainId: number,
     target: string,
     metaTxToSign: { functionName: string; func: string; parameters: any[] },
-    deadline: number,
+    deadline?: number,
 ): Promise<IGelatoStruct> {
     const signerAddress = await provider.getAddress();
     const relayerAddress = GELATO_RELAY_ADDRESS;
@@ -53,7 +55,7 @@ export async function getGelatoRequestStruct(
         data: data,
         user: signerAddress,
         userNonce: Number(userNonce),
-        userDeadline: deadline,
+        userDeadline: deadline ?? calculateDeadline(DEFAULT_DEADLINE_GAP),
     };
 
     return gelatoRequestStruct;
@@ -64,7 +66,7 @@ export const getGaslessTxToSign = async (
     contractAddress: string,
     provider: any,
     metaTxToSign: { functionName: string; func: string; parameters: any[] },
-    deadline: number,
+    deadline?: number,
   ): Promise<EIP712<IGelatoStruct>> =>{
     const domain = gelatoEIP712DomainTypeData(chain);
   
@@ -73,5 +75,8 @@ export const getGaslessTxToSign = async (
     const value = await getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);
   
     return { domain, types, value };
-  }
-  
+}
+
+function calculateDeadline(gap: number): number {
+    return Math.floor(Date.now() / 1000) + gap;
+}

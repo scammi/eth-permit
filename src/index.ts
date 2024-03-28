@@ -81,7 +81,7 @@ export const getERC2612PermitTypeData = async (
   token: string | Domain,
   owner: string,
   spender: string,
-  amount: string | number = MAX_INT,
+  amount: bigint,
   deadline?: bigint,
 ): Promise<any> => {
   const tokenAddress = (token as Domain).verifyingContract || token as string;
@@ -146,7 +146,7 @@ export async function getSignERC20Permit(
     tokenAddress,
     buyerAddress,
     contractAddress,
-    amount.toString(),
+    amount,
     deadline 
   );
 
@@ -199,7 +199,6 @@ export async function buildPaymentTransaction(
     contractAddress,
     provider,
     functionCall,
-    deadline 
+    // deadline 
   );
 }
-

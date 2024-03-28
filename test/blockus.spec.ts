@@ -58,7 +58,6 @@ describe('Payment intention construction', () => {
       const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
       const wallet = new ethers.Wallet(privateKey, provider);
       const buyersAddress = await wallet.getAddress();
-      
 
       // WIP Still works need to be done to acomodate ethers v6 providers.
 
@@ -86,6 +85,8 @@ describe('Payment intention construction', () => {
         intent,
         wallet
       );
+
+      console.log(paymentMetaTransaction)
       
       // Sign meta transaction for token distribution.
       const distributeTokenSignature = await wallet.signTypedData(
