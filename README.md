@@ -2,7 +2,7 @@
 
 ## getSignERC20Permit:
 
-This function is responsible for generating permit data required for ERC-2612 (permit) token transactions. It prepares the necessary information for a user to delegate token transfers to another entity (blockus distribution contract).
+This function is responsible for generating permit data required for ERC-2612 (permit) token transactions. It prepares the necessary information for a user to delegate token transfers to another entity (blockus distribution contract). This signature grants the blockus distribution contract permission to spend the users fund.
 
 ```js
 const permitTypeData = await getSignERC20Permit(
@@ -20,7 +20,7 @@ const permitSignature = await signer.signTypedData(
 
 ## buildPaymentTransaction:
 
-This function constructs a meta transaction for payment purposes. A meta transaction is a transaction that's signed off-chain and then relayed to the blockchain by a third party. In this context, buildPaymentTransaction assembles the data needed to execute a payment, including details such as the permit signature (from getSignERC20Permit), the intent of the payment. This meta transaction allows for decentralized applications to interact with users without requiring them to directly cover the transaction fees in Ether.
+This function constructs the payment meta transaction to be sign by the buyer. A meta transaction is a transaction that's signed off-chain and then relayed to the blockchain by a third party. In this context, buildPaymentTransaction assembles the data needed to execute a payment and be sign, including details such as the permit signature (from getSignERC20Permit) and the intent of the payment. This meta transaction allows for decentralized applications to interact with users without requiring them to directly cover the transaction fees in Ether.
 
 ```js
 const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
