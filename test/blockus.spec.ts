@@ -1,5 +1,5 @@
-import { TypedDataDomain, ethers } from 'ethers';
-import { buildPaymentTransaction, getSignERC20Permit, signERC2612Permit } from '../src';
+import { ethers } from 'ethers';
+import { buildPaymentTransaction, getSignERC20Permit } from '../src';
 import { expect } from 'chai';
 import { EIP712, IGelatoStruct } from '../src/types';
 import 'dotenv/config'

@@ -59,7 +59,6 @@ export async function getGelatoRequestStruct(
     return gelatoRequestStruct;
 }
 
-
 export const getGaslessTxToSign = async (
     chain: number,
     contractAddress: string,

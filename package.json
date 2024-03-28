@@ -1,17 +1,17 @@
 {
-  "name": "eth-permit",
+  "name": "blockus-eth-payment",
   "version": "0.2.1",
-  "description": "Sign permit messages for Ethereum tokens",
-  "main": "dist/eth-permit.js",
-  "types": "dist/eth-permit.d.ts",
-  "author": "David Mihal <david@dmihal.com>",
+  "description": "Sign messages for Ethereum blockus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Santiago Cammi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dmihal/eth-permit.git"
+    "url": "git+https://github.com/BlockUs0/signatures-type-data"
   },
   "bugs": {
-    "url": "https://github.com/dmihal/eth-permit/issues"
+    "url": "https://github.com/BlockUs0/signatures-type-data"
   },
   "scripts": {
     "build": "tsc",
