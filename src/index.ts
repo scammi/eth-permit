@@ -1,5 +1,5 @@
-import { EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
-import { Signature, ethers } from 'ethers';
+import { ChainInfo, EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
+import { Signature, TypedDataDomain, ethers } from 'ethers';
 import { getGaslessTxToSign } from './gelato';
 
 export const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
@@ -34,57 +34,16 @@ const ERC20_PERMIT_ABI_INTERFACE: ethers.InterfaceAbi = [
   'function name() view returns (string)',
 ];
 
-interface ERC2612PermitMessage {
-  owner: string;
-  spender: string;
-  value: number | string;
-  nonce: number | string;
-  deadline: number | string;
-}
-
-interface Domain {
-  name: string;
-  version: string;
-  chainId: number;
-  verifyingContract: string;
-}
-
-const EIP712Domain = [
-  { name: "name", type: "string" },
-  { name: "version", type: "string" },
-  { name: "chainId", type: "uint256" },
-  { name: "verifyingContract", type: "address" },
-];
-
-export const createTypedERC2612Data = (message: ERC2612PermitMessage, domain: Domain) => {
-  const typedData = {
-    types: {
-      EIP712Domain,
-      Permit: [
-        { name: "owner", type: "address" },
-        { name: "spender", type: "address" },
-        { name: "value", type: "uint256" },
-        { name: "nonce", type: "uint256" },
-        { name: "deadline", type: "uint256" },
-      ],
-    },
-    primaryType: "Permit",
-    domain,
-    message,
-  };
-
-  return typedData;
-};
 
 export const getERC2612PermitTypeData = async (
   provider: any,
-  token: string | Domain,
+  token: string | TypedDataDomain,
   owner: string,
   spender: string,
   amount: bigint,
   deadline?: bigint,
 ): Promise<any> => {
-  const tokenAddress = (token as Domain).verifyingContract || token as string;
+  const tokenAddress = (token as TypedDataDomain).verifyingContract || token as string;
 
   const contract = new ethers.Contract(tokenAddress, ERC20_PERMIT_ABI_INTERFACE, provider);
 
@@ -133,7 +92,6 @@ export async function getSignERC20Permit(
   provider: any
 ): Promise<Erc20PermitToSign> {
 
-  const chain = paymentIntentResponse.chain;
   const contractAddress = paymentIntentResponse.contractAddress;
   const deadline: bigint = paymentIntentResponse.parameters['deadline'];
   const tokenAddress: string = paymentIntentResponse.parameters['paymentTokenAddress'];
@@ -165,7 +123,7 @@ export async function buildPaymentTransaction(
   const functionName:string = paymentIntentResponse.functionName;
   const func = paymentIntentResponse.functionSignature;
   const chain = paymentIntentResponse.chain;
-  const deadline = paymentIntentResponse.parameters.deadline;
+  const chainId: number = chainInfo[chain].chainId;
 
   const splitPermitSignature = Signature.from(permitSignature);
 
@@ -195,10 +153,15 @@ export async function buildPaymentTransaction(
   const functionCall = { functionName, func, parameters: [ ...distributionParams, ...permitTransactionParams ] };
 
   return getGaslessTxToSign(
-    chain,
+    chainId,
     contractAddress,
     provider,
     functionCall,
-    // deadline 
   );
+}
+
+const chainInfo: ChainInfo = {
+  'polygon': {
+    chainId: 137
+  }
 }
