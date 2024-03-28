@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getGelatoRequestStruct = exports.EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA = exports.GELATO_RELAY_ADDRESS = exports.gelatoEIP712DomainTypeData = void 0;
+exports.getGaslessTxToSign = exports.getGelatoRequestStruct = exports.EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA = exports.GELATO_RELAY_ADDRESS = exports.gelatoEIP712DomainTypeData = void 0;
 const ethers_1 = require("ethers");
 const gelato_abi_1 = __importDefault(require("./gelato-abi"));
 const utils_1 = require("ethers/lib/utils");
@@ -64,7 +64,7 @@ function getGelatoRequestStruct(provider, chainId, target, metaTxToSign, deadlin
     });
 }
 exports.getGelatoRequestStruct = getGelatoRequestStruct;
-const getGaslessTxToSign = (chain, contractAddress, provider, metaTxToSign, deadline) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getGaslessTxToSign = (chain, contractAddress, provider, metaTxToSign, deadline) => __awaiter(void 0, void 0, void 0, function* () {
     const domain = gelatoEIP712DomainTypeData(chain);
     const types = Object.assign({}, exports.EIP712_SPONSORED_CALL_ERC2771_TYPE_DATA);
     const value = yield getGelatoRequestStruct(provider, chain, contractAddress, metaTxToSign, deadline);

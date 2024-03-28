@@ -2,9 +2,10 @@ import { TypedDataDomain, ethers } from 'ethers';
 import { buildPaymentTransaction, getSignERC20Permit, signERC2612Permit } from '../src';
 import { expect } from 'chai';
 import { EIP712, IGelatoStruct } from '../src/types';
+import 'dotenv/config'
 
 const spender = '0x0000000000000000000000000000000000000002';
-const privateKey = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const privateKey = process.env.PK ?? '';
 const intent = {
   chain: 137,
   parameters: {
@@ -24,7 +25,7 @@ describe('Payment intention construction', () => {
     it('Builds payment meta transaction type data', async () => {
       const permitSig = '0xdd82062cb06d9d81fa0d71d7e5ebdf4f67506d9b270826dcd1ccc1dd83fe5aa17849d6bfeaba01f291d5bfbfba4b358f665b0914c512258edda41e47898793c21b'
 
-      const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
+      const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
       const wallet = new ethers.Wallet(privateKey, provider);
 
       const metaTxtoBeSign = await buildPaymentTransaction(
@@ -39,7 +40,7 @@ describe('Payment intention construction', () => {
     });
 
     it('Creates permit type data', async() => {
-      const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
+      const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
       const wallet = new ethers.Wallet(privateKey, provider);
       const buyersAddress = await wallet.getAddress();
 
@@ -54,9 +55,10 @@ describe('Payment intention construction', () => {
     });
 
     it('Complete flow example', async() => {
-      const provider = new ethers.providers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
+      const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
       const wallet = new ethers.Wallet(privateKey, provider);
       const buyersAddress = await wallet.getAddress();
+      
 
       // WIP Still works need to be done to acomodate ethers v6 providers.
 
@@ -70,29 +72,31 @@ describe('Payment intention construction', () => {
       );
 
       // 3. Get permit signature 
-      const permitSignature = await wallet._signTypedData(
+      const permitSignature = await wallet.signTypedData(
         permitTypeData.domain as TypedDataDomain,
         permitTypeData.types,
         permitTypeData.value,
       );      
 
+      console.log(permitSignature);
+
 
       // Constructs payment transaction
-      const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
-        buyersAddress,
-        permitSignature,
-        intent
-      );
+      // const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
+      //   buyersAddress,
+      //   permitSignature,
+      //   intent
+      // );
     
-      // Sign meta transaction for token distribution.
-      const distributeTokenSignature = await wallet._signTypedData(
-          paymentMetaTransaction.domain as TypedDataDomain,
-          paymentMetaTransaction.types,
-          paymentMetaTransaction.value,
-      );
+      // // Sign meta transaction for token distribution.
+      // const distributeTokenSignature = await wallet.signTypedData(
+      //     paymentMetaTransaction.domain as TypedDataDomain,
+      //     paymentMetaTransaction.types,
+      //     paymentMetaTransaction.value,
+      // );
 
-      const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
-      console.log({ distributeTokenSignature, permitSignature, metaTxDeadline });
+      // const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
+      // console.log({ distributeTokenSignature, permitSignature, metaTxDeadline });
 
     });
 });

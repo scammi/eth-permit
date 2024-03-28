@@ -1,6 +1,5 @@
-import ethers, { BigNumber, Contract } from 'ethers';
+import { Contract, Interface } from 'ethers';
 import gelatoAbi from './gelato-abi';
-import { Interface } from 'ethers/lib/utils';
 import { EIP712, IGelatoStruct } from './types';
 
 export function gelatoEIP712DomainTypeData(chain: number) {
@@ -37,9 +36,7 @@ export async function getGelatoRequestStruct(
 
     const gelatoRelayerContract = new Contract(relayerAddress, gelatoAbi);
     const contract = gelatoRelayerContract.connect(provider);
-    const userNonce: BigNumber = BigNumber.from(
-        await (contract as any).userNonce(await provider.getAddress()),
-    );
+    const userNonce: bigint = await (contract as any).userNonce(await provider.getAddress());
     
     let data;
     try {
@@ -55,7 +52,7 @@ export async function getGelatoRequestStruct(
         target: target,
         data: data,
         user: signerAddress,
-        userNonce: userNonce.toNumber(),
+        userNonce: Number(userNonce),
         userDeadline: deadline,
     };
 
