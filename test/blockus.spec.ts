@@ -13,7 +13,7 @@ const intent = {
       fromAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
       totalPrice: BigInt('100'),
       transfers: [['0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399', BigInt('100')]],
-      deadline: BigInt('100'),
+      deadline: BigInt('69'),
   },
   contractAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
   functionName: 'distributeTokensWithPermit',
@@ -49,6 +49,7 @@ describe('Payment intention construction', () => {
         intent,
         wallet
       );
+      
       expect(permitTypeData).to.haveOwnProperty('domain')
       expect(permitTypeData).to.haveOwnProperty('types')
       expect(permitTypeData).to.haveOwnProperty('value')
@@ -71,33 +72,31 @@ describe('Payment intention construction', () => {
         wallet
       );
 
+      // console.log(permitTypeData);
+
       // 3. Get permit signature 
       const permitSignature = await wallet.signTypedData(
-        permitTypeData.domain as TypedDataDomain,
+        permitTypeData.domain,
         permitTypeData.types,
         permitTypeData.value,
       );      
 
-      console.log(permitSignature);
-
-
       // Constructs payment transaction
-      // const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
-      //   buyersAddress,
-      //   permitSignature,
-      //   intent
-      // );
-    
-      // // Sign meta transaction for token distribution.
-      // const distributeTokenSignature = await wallet.signTypedData(
-      //     paymentMetaTransaction.domain as TypedDataDomain,
-      //     paymentMetaTransaction.types,
-      //     paymentMetaTransaction.value,
-      // );
+      const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
+        permitSignature,
+        intent,
+        wallet
+      );
+      console.log(paymentMetaTransaction);
+      // Sign meta transaction for token distribution.
+      const distributeTokenSignature = await wallet.signTypedData(
+        paymentMetaTransaction.domain,
+        paymentMetaTransaction.types,
+        paymentMetaTransaction.value,
+      );
 
-      // const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
-      // console.log({ distributeTokenSignature, permitSignature, metaTxDeadline });
-
+      const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
+      console.log({ distributeTokenSignature, permitSignature, metaTxDeadline });
     });
 });
 

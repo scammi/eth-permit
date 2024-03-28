@@ -7,7 +7,7 @@ export function gelatoEIP712DomainTypeData(chain: number) {
         name: 'GelatoRelay1BalanceERC2771',
         version: '1',
         verifyingContract: GELATO_RELAY_ADDRESS,
-        chain,
+        chainId: chain,
     };
 }
 

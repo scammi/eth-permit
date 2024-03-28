@@ -165,20 +165,20 @@ export const getERC2612PermitTypeData = async (
       nonce,
       deadline,
   };
-
+  
   const domain = {
     name,
     version,
     chainId,
     verifyingContract: tokenAddress,
   };
-
+  
   const erc20PermitToSign = {
     domain,
     types,
     value,
   };
-
+  
   return erc20PermitToSign ;
 };
 
@@ -207,7 +207,7 @@ export async function getSignERC20Permit(
 
   const permitType = { Permit: typeData.types.Permit }
 
-  return { domain: typeData.domain, types: permitType, value: typeData.message };
+  return { domain: typeData.domain, types: permitType, value: typeData.value };
 }
 
 export async function buildPaymentTransaction(
@@ -247,7 +247,7 @@ export async function buildPaymentTransaction(
       }
   });
 
-  const functionCall =  { functionName, func, parameters: [ ...distributionParams, ...permitTransactionParams ] };
+  const functionCall = { functionName, func, parameters: [ ...distributionParams, ...permitTransactionParams ] };
 
   return getGaslessTxToSign(
     chain,
