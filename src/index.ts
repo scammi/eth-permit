@@ -2,7 +2,7 @@ import { EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
 import { Signature, ethers } from 'ethers';
 import { getGaslessTxToSign } from './gelato';
 
-const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+export const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const ERC20_PERMIT_TYPE = {
   Permit: [
       {
@@ -82,7 +82,7 @@ export const getERC2612PermitTypeData = async (
   owner: string,
   spender: string,
   amount: string | number = MAX_INT,
-  deadline?: number,
+  deadline?: bigint,
 ): Promise<any> => {
   const tokenAddress = (token as Domain).verifyingContract || token as string;
 
@@ -147,7 +147,7 @@ export async function getSignERC20Permit(
     buyerAddress,
     contractAddress,
     amount.toString(),
-    Number(deadline)
+    deadline 
   );
 
   const permitType = { Permit: typeData.types.Permit }

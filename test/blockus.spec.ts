@@ -1,21 +1,20 @@
 import { ethers } from 'ethers';
-import { buildPaymentTransaction, getSignERC20Permit } from '../src';
+import { MAX_INT, buildPaymentTransaction, getSignERC20Permit } from '../src';
 import { expect } from 'chai';
 import { EIP712, IGelatoStruct } from '../src/types';
 import 'dotenv/config'
 
-const spender = '0x0000000000000000000000000000000000000002';
 const privateKey = process.env.PK ?? '';
 const intent = {
   chain: 137,
   parameters: {
       paymentTokenAddress: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
-      fromAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
-      totalPrice: BigInt('100'),
-      transfers: [['0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399', BigInt('100')]],
-      deadline: BigInt('69'),
+      fromAddress: '0x61406EdAa39799EECe2D6567498E0D9C61fef1B6',
+      totalPrice: 10000n,
+      transfers: [['0xCa75873f10F3B7e7eFB0383fdda0c9644ad8f608', 10000n]],
+      deadline: 115792089237316195423570985008687907853269984665640564039457584007913129639935n,
   },
-  contractAddress: '0xAA9F814155B6c03f29B62D881D4Ac5b13eAc3399',
+  contractAddress: '0xA65cc7AF14003464A87294E92FaCD304A61059ac',
   functionName: 'distributeTokensWithPermit',
   functionSignature: 'function distributeTokensWithPermit(address,address,(address,uint256)[],uint256,uint256,uint8,bytes32,bytes32)',
 };
@@ -72,7 +71,7 @@ describe('Payment intention construction', () => {
         wallet
       );
 
-      // console.log(permitTypeData);
+      console.log(permitTypeData);
 
       // 3. Get permit signature 
       const permitSignature = await wallet.signTypedData(
@@ -87,7 +86,7 @@ describe('Payment intention construction', () => {
         intent,
         wallet
       );
-      console.log(paymentMetaTransaction);
+      
       // Sign meta transaction for token distribution.
       const distributeTokenSignature = await wallet.signTypedData(
         paymentMetaTransaction.domain,
