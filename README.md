@@ -9,6 +9,7 @@ const permitTypeData = await getSignERC20Permit(
     buyersAddress,
     paymentIntent,
     signer
+)
 
 const permitSignature = await signer.signTypedData(
     permitTypeData.domain,
@@ -100,7 +101,7 @@ const distributeTokenSignature = await signer.signTypedData(
 const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
 
 // Execute listing
-const body = {
+const executeBody = {
     "paymentWalletChain": "polygon",
     "paymentWalletAddress": buyersAddress,
     "paymentTxSignature": distributeTokenSignature,
@@ -108,10 +109,10 @@ const body = {
     "metaTransactionDeadline": metaTxDeadline
 }
 
-axios.post(`${blockusEndpoint}/v1/marketplace/listings/${listingId}/execute`, body)
+axios.post(`${blockusEndpoint}/v1/marketplace/listings/${listingId}/execute`, executeBody)
   .then((response) => {
     console.log('Response:', response.data);
-  })
+  });
 
 ```
 
