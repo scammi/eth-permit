@@ -84,7 +84,7 @@ const permitSignature = await signer.signTypedData(
 );      
 
 // Constructs payment transaction
-const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
+const paymentMetaTransaction = await buildPaymentTransaction(
     permitSignature,
     intent,
     signer
