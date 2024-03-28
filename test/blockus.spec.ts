@@ -10,15 +10,14 @@ const intent = {
   parameters: {
       paymentTokenAddress: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
       fromAddress: '0x61406EdAa39799EECe2D6567498E0D9C61fef1B6',
-      totalPrice: 10000n,
-      transfers: [['0xCa75873f10F3B7e7eFB0383fdda0c9644ad8f608', 10000n]],
+      totalPrice: 1000n,
+      transfers: [['0x26e4D4Fb1Ca8949304e5dc6a776718D754a238e9', 1000n]],
       deadline: 115792089237316195423570985008687907853269984665640564039457584007913129639935n,
   },
   contractAddress: '0xA65cc7AF14003464A87294E92FaCD304A61059ac',
   functionName: 'distributeTokensWithPermit',
   functionSignature: 'function distributeTokensWithPermit(address,address,(address,uint256)[],uint256,uint256,uint8,bytes32,bytes32)',
 };
-
 
 describe('Payment intention construction', () => {
     it('Complete flow example', async() => {
