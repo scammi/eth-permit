@@ -14,7 +14,7 @@ const buyersAddress = await signer.getAddress();
 // GETS PAYMENT INTENTION FROM BLOCKUS
 // https://api.blockus.net/api-docs/swagger/index.html#/Marketplace%20listings/getPaymentIntent
 const listingId = 'arqB2clzH46oehy59eXIc4PNHFKA';
-const paymentIntent = await blockus.getPaymentIntent(listingId);
+const intent = await blockus.getPaymentIntent(listingId);
 
 // Creates permit type data
 const permitTypeData = await getSignERC20Permit(
