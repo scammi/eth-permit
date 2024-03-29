@@ -1,109 +1,129 @@
-# eth-permit
-
-This package simplifies the process of signing `permit` messages for Ethereum tokens.
-
-## What is permit?
-
-Permit is a technique for metatransaction token transfers. Using permit can allow a contract
-to use a user's tokens without the user first needing to first to send an `approve()` transaction.
-
-## Permit variations
-
-Permit was first introduced in the Multi-Collateral Dai token contract.
-
-The permit technique is being standardized as part of [ERC-2612](https://github.com/ethereum/EIPs/issues/2613).
-This standard (which has already been implemented in projects like Uniswap V2) is slightly
-different than the implementation used by Dai. Therefore, this library provides functions
-for signing both types of messages.
+# Blockus Non-custodial payments.
 
 ## Usage
 
-Install the package `eth-permit` using npm or yarn.
+This is meant to be soon an SDK, and you will be able to import the needed functions. In the mean time code can be copied or used are reference. Important code is within the `index.ts` and `gelato.ts` files.
 
-### Dai-style permits
+We are going to sign two type data objects, one is a USDC permit and the second is a meta transaction that will execute the payment. We first call the get payment intent from blockus API, this will have everything we need to construct they type data objects to be sign.
 
-```javascript
-import { signDaiPermit } from 'eth-permit';
+```js
+const provider = new ethers.BrowserProvider(window.ethereum);
+const signer = await provider.getSigner();
+const buyersAddress = await signer.getAddress();
 
-// Sign message using injected provider (ie Metamask).
-// You can replace window.ethereum with any other web3 provider.
-const result = await signDaiPermit(window.ethereum, tokenAddress, senderAddress, spender);
+// GETS PAYMENT INTENTION FROM BLOCKUS
+// https://api.blockus.net/api-docs/swagger/index.html#/Marketplace%20listings/getPaymentIntent
+const listingId = 'arqB2clzH46oehy59eXIc4PNHFKA';
+const intent = await blockus.getPaymentIntent(listingId);
 
-await token.methods.permit(senderAddress, spender, result.nonce, result.expiry, true, result.v, result.r, result.s).send({
-  from: senderAddress,
-});
+// Creates permit type data
+const permitTypeData = await getSignERC20Permit(
+    buyersAddress,
+    intent,
+    signer
+);
+
+// Get permit signature 
+const permitSignature = await signer.signTypedData(
+    permitTypeData.domain,
+    permitTypeData.types,
+    permitTypeData.value,
+);      
+
+// Constructs payment transaction
+const paymentMetaTransaction = await buildPaymentTransaction(
+    permitSignature,
+    intent,
+    signer
+);
+
+// Sign meta transaction for token distribution.
+const distributeTokenSignature = await signer.signTypedData(
+    paymentMetaTransaction.domain,
+    paymentMetaTransaction.types,
+    paymentMetaTransaction.value,
+);
+
+// Meta transaction deadline
+const metaTxDeadline = paymentMetaTransaction.value.userDeadline;
+
+// Execute listing
+const executeBody = {
+    "paymentWalletChain": "polygon",
+    "paymentWalletAddress": buyersAddress,
+    "paymentTxSignature": distributeTokenSignature,
+    "permitTxSignature": permitSignature,
+    "metaTransactionDeadline": metaTxDeadline
+}
+
+// https://api.blockus.net/api-docs/swagger/index.html#/Marketplace%20listings/executeListing
+axios.post(`${blockusEndpoint}/v1/marketplace/listings/${listingId}/execute`, executeBody)
+  .then((response) => {
+    console.log('Response:', response.data);
+  });
+
 ```
 
-### ERC2612-style permits
 
-```javascript
-import { signERC2612Permit } from 'eth-permit';
+## Function Descriptions
+### getSignERC20Permit:
 
-const value = web3.utils.toWei('1', 'ether');
+This function is responsible for generating permit data required for ERC-2612 (permit) token transactions. It prepares the necessary information for a user to delegate token transfers to another entity (blockus distribution contract). This signature grants the blockus distribution contract permission to spend the users fund.
 
-// Sign message using injected provider (ie Metamask).
-// You can replace window.ethereum with any other web3 provider.
-const result = await signERC2612Permit(window.ethereum, tokenAddress, senderAddress, spender, value);
+```js
+const permitTypeData = await getSignERC20Permit(
+    buyersAddress,
+    paymentIntent,
+    signer
+)
 
-await token.methods.permit(senderAddress, spender, value, result.deadline, result.v, result.r, result.s).send({
-  from: senderAddress,
-});
+const permitSignature = await signer.signTypedData(
+    permitTypeData.domain,
+    permitTypeData.types,
+    permitTypeData.value,
+);
 ```
 
-### Ethers Wallet support
+### buildPaymentTransaction:
 
-The library now supports Ethers.js Wallet signers:
+This function constructs the payment meta transaction to be sign by the buyer. A meta transaction is a transaction that's signed off-chain and then relayed to the blockchain by a third party. In this context, buildPaymentTransaction assembles the data needed to execute a payment and be sign, including details such as the permit signature (from getSignERC20Permit) and the intent of the payment. This meta transaction allows for decentralized applications to interact with users without requiring them to directly cover the transaction fees in Ether.
 
-```javascript
-import { signERC2612Permit } from 'eth-permit';
-
-const value = web3.utils.toWei('1', 'ether');
-
-const wallet = new ethers.Wallet(privateKey, new ethers.providers.JsonRpcProvider(rpcUrl));
-const senderAddress = await wallet.getAddress();
-
-const result = await signERC2612Permit(wallet, tokenAddress, senderAddress, spender, value);
-
-await token.methods.permit(senderAddress, spender, value, result.deadline, result.v, result.r, result.s).send({
-  from: senderAddress,
-});
+```js
+const paymentMetaTransaction:EIP712<IGelatoStruct> = await buildPaymentTransaction(
+    permitSignature, // Permit type data signature 
+    paymentIntent, 
+    signer
+);
 ```
 
-### Special consideration when running on test networks
 
-There are setups with dev test networks that fork from the mainnet.  While this type of setup has a lot of benefits, it can make some of the interactions difficult.  Take, for instance, the DAI deployment on the mainnet.  Best practices for utilizing signatures is to include a DOMAIN_SEPARATOR that includes the chainId.  When DAI was deployed on the mainnet, part of the DOMAIN_SEPARATOR set the chainId to 1.  If you are interacting with that contract on your fork you need to generate a signature with the chainId value set to 1 and then send the transaction with a provider connected to your test netowrk which may have a chainId of 31337 in the case of hardhat.
+## Ethers JS.
 
-If all the information (such as nonce and expiry) is not provided to the signDaiPermit or signERC2512Permit functions then queries are made to determine information with the forked chainId so you would need the provider to have the forked chainId.  However, a provider that has the mainnet chainId is required to sign the message.  Therefor, all information should be passed to the functions and not left to defaults.
+EtherJS v6 is the only dependency needed, it is used to instantiate Signers, provider objects and generate the required signatures. In the context of the web browser metamask will be both signer and provider.
 
-```javascript
-import { signDaiPermit } from 'eth-permit';
+```js
+// Web browser
+const provider = new ethers.BrowserProvider(window.ethereum);
+const signer = await provider.getSigner();
 
-const max_int = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-
-const value = web3.utils.toWei('1', 'ether');
-
-const wallet = new ethers.Wallet(privateKey, new ethers.providers.JsonRpcProvider(rpcUrl));
-const senderAddress = await wallet.getAddress();
-
-// find the correct nonce to use with a query to the test network
-const nonce = await token.methods.nonces(senderAddress).send({
-  from: senderAddress,
-});
-
-// create a wallet that will use a mainnet chainId for its provider but does not connect to anything
-// it will use the ethers.js _signTypedData to create the signature and not a wallet provider
-let mainnetWallet = new ethers.Wallet(privateKey, ethers.getDefaultProvider());
-
-let domain = {
-        "name": "Dai Stablecoin",
-        "version": "1",
-        "chainId": 1,
-        "verifyingContract": tokenAddress
-    }
-
-const result = await signDaiPermit(mainnetWallet, domain, senderAddress, spender, max_int, nonce);
-
-await token.methods.permit(senderAddress, spender, result.nonce, result.expiry, true, result.v, result.r, result.s).send({
-  from: senderAddress,
-});
+// NodeJS
+const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC, 137);
+const wallet = new ethers.Wallet(privateKey, provider);
+const buyersAddress = await wallet.getAddress();
 ```
+Signatures will prompt users to sign through a pop up when the signer is metamask or another web base wallet. Objects being sign are Typed structured park of the EIP-712.
+
+```js
+const signature = await signer.signTypedData(
+    typeData.domain,
+    typeData.types,
+    typeData.value,
+);
+```
+
+
+
+## Further Reading
+https://eips.ethereum.org/EIPS/eip-712
+
+https://eips.ethereum.org/EIPS/eip-2612

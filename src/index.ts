@@ -1,138 +1,89 @@
-import { getChainId, call, signData, RSV } from './rpc';
-import { hexToUtf8 } from './lib';
-import { EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
-import { ethers } from 'ethers';
+import { ChainInfo, EIP712, Erc20PermitToSign, IGelatoStruct } from './types';
+import { Signature, TypedDataDomain, ethers } from 'ethers';
 import { getGaslessTxToSign } from './gelato';
 
-const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+export const MAX_INT = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const ERC20_PERMIT_TYPE = {
+  Permit: [
+      {
+          name: 'owner',
+          type: 'address',
+      },
+      {
+          name: 'spender',
+          type: 'address',
+      },
+      {
+          name: 'value',
+          type: 'uint256',
+      },
+      {
+          name: 'nonce',
+          type: 'uint256',
+      },
+      {
+          name: 'deadline',
+          type: 'uint256',
+      },
+  ],
+};
 
-interface DaiPermitMessage {
-  holder: string;
-  spender: string;
-  nonce: number;
-  expiry: number | string;
-  allowed?: boolean;
-}
-
-interface ERC2612PermitMessage {
-  owner: string;
-  spender: string;
-  value: number | string;
-  nonce: number | string;
-  deadline: number | string;
-}
-
-interface Domain {
-  name: string;
-  version: string;
-  chainId: number;
-  verifyingContract: string;
-}
-
-const EIP712Domain = [
-  { name: "name", type: "string" },
-  { name: "version", type: "string" },
-  { name: "chainId", type: "uint256" },
-  { name: "verifyingContract", type: "address" },
+const ERC20_PERMIT_ABI_INTERFACE: ethers.InterfaceAbi = [
+  'function EIP712_VERSION() view returns (string)',
+  'function nonces(address) view returns (uint256)',
+  'function name() view returns (string)',
 ];
 
-export const createTypedERC2612Data = (message: ERC2612PermitMessage, domain: Domain) => {
-  const typedData = {
-    types: {
-      EIP712Domain,
-      Permit: [
-        { name: "owner", type: "address" },
-        { name: "spender", type: "address" },
-        { name: "value", type: "uint256" },
-        { name: "nonce", type: "uint256" },
-        { name: "deadline", type: "uint256" },
-      ],
-    },
-    primaryType: "Permit",
-    domain,
-    message,
-  };
-
-  return typedData;
-};
-
-const NONCES_FN = '0x7ecebe00';
-const NAME_FN = '0x06fdde03';
-
-const zeros = (numZeros: number) => ''.padEnd(numZeros, '0');
-
-const getTokenName = async (provider: any, address: string) =>
-  hexToUtf8((await call(provider, address, NAME_FN)).substr(130));
-
-
-const getDomain = async (provider: any, token: string | Domain, version: string = '1'): Promise<Domain> => {
-  if (typeof token !== 'string') {
-    return token as Domain;
-  }
-
-  const tokenAddress = token as string;
-
-  const [name, chainId] = await Promise.all([
-    getTokenName(provider, tokenAddress),
-    getChainId(provider),
-  ]);
-
-  const domain: Domain = { name, version, chainId, verifyingContract: tokenAddress };
-  return domain;
-};
-
-export const signERC2612Permit = async (
-  provider: any,
-  token: string | Domain,
-  owner: string,
-  spender: string,
-  value: string | number = MAX_INT,
-  deadline?: number,
-  nonce?: number,
-  version?: string,
-): Promise<ERC2612PermitMessage & RSV> => {
-  const tokenAddress = (token as Domain).verifyingContract || token as string;
-
-  const message: ERC2612PermitMessage = {
-    owner,
-    spender,
-    value,
-    nonce: nonce === undefined ? await call(provider, tokenAddress, `${NONCES_FN}${zeros(24)}${owner.substr(2)}`) : nonce,
-    deadline: deadline || MAX_INT,
-  };
-
-  const domain = await getDomain(provider, token, version);
-  const typedData = createTypedERC2612Data(message, domain);
-  const sig = await signData(provider, owner, typedData);
-
-  return { ...sig, ...message };
-};
 
 export const getERC2612PermitTypeData = async (
   provider: any,
-  token: string | Domain,
+  token: string | TypedDataDomain,
   owner: string,
   spender: string,
-  value: string | number = MAX_INT,
-  deadline?: number,
-  nonce?: number,
-  version?: string,
+  amount: bigint,
+  deadline?: bigint,
 ): Promise<any> => {
-  const tokenAddress = (token as Domain).verifyingContract || token as string;
+  const tokenAddress = (token as TypedDataDomain).verifyingContract || token as string;
 
-  const message: ERC2612PermitMessage = {
-    owner,
-    spender,
-    value,
-    nonce: nonce === undefined ? await call(provider, tokenAddress, `${NONCES_FN}${zeros(24)}${owner.substr(2)}`) : nonce,
-    deadline: deadline || MAX_INT,
+  const contract = new ethers.Contract(tokenAddress, ERC20_PERMIT_ABI_INTERFACE, provider);
+
+  const [nonce, name, chainId] = await Promise.all([
+      contract.nonces(owner),
+      contract.name(),
+      137,
+  ]);
+
+  let version: string;
+  try {
+      version = await contract.EIP712_VERSION();
+  } catch (error) {
+      version = '2' ;
+  }
+
+  const types = ERC20_PERMIT_TYPE;
+
+  const value = {
+      owner,
+      spender,
+      value: amount,
+      nonce,
+      deadline,
   };
-
-  const domain = await getDomain(provider, token, version);
-  const typedData = createTypedERC2612Data(message, domain);
-
-  return typedData ;
-
+  
+  const domain = {
+    name,
+    version,
+    chainId,
+    verifyingContract: tokenAddress,
+  };
+  
+  const erc20PermitToSign = {
+    domain,
+    types,
+    value,
+  };
+  
+  return erc20PermitToSign ;
 };
 
 export async function getSignERC20Permit(
@@ -141,7 +92,6 @@ export async function getSignERC20Permit(
   provider: any
 ): Promise<Erc20PermitToSign> {
 
-  const chain = paymentIntentResponse.chain;
   const contractAddress = paymentIntentResponse.contractAddress;
   const deadline: bigint = paymentIntentResponse.parameters['deadline'];
   const tokenAddress: string = paymentIntentResponse.parameters['paymentTokenAddress'];
@@ -154,13 +104,13 @@ export async function getSignERC20Permit(
     tokenAddress,
     buyerAddress,
     contractAddress,
-    amount.toString(),
-    Number(deadline)
+    amount,
+    deadline 
   );
 
   const permitType = { Permit: typeData.types.Permit }
 
-  return { domain: typeData.domain, types: permitType, value: typeData.message };
+  return { domain: typeData.domain, types: permitType, value: typeData.value };
 }
 
 export async function buildPaymentTransaction(
@@ -173,9 +123,9 @@ export async function buildPaymentTransaction(
   const functionName:string = paymentIntentResponse.functionName;
   const func = paymentIntentResponse.functionSignature;
   const chain = paymentIntentResponse.chain;
-  const deadline = paymentIntentResponse.parameters.deadline;
+  const chainId: number = chainInfo[chain].chainId;
 
-  const splitPermitSignature = ethers.utils.splitSignature(permitSignature);
+  const splitPermitSignature = Signature.from(permitSignature);
 
   const permitTransactionParams = [
      splitPermitSignature.v,
@@ -200,14 +150,18 @@ export async function buildPaymentTransaction(
       }
   });
 
-  const functionCall =  { functionName, func, parameters: [ ...distributionParams, ...permitTransactionParams ] };
+  const functionCall = { functionName, func, parameters: [ ...distributionParams, ...permitTransactionParams ] };
 
   return getGaslessTxToSign(
-    chain,
+    chainId,
     contractAddress,
     provider,
     functionCall,
-    deadline 
   );
 }
 
+const chainInfo: ChainInfo = {
+  'polygon': {
+    chainId: 137
+  }
+}

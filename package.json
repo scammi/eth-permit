@@ -1,17 +1,17 @@
 {
-  "name": "eth-permit",
+  "name": "blockus-eth-payment",
   "version": "0.2.1",
-  "description": "Sign permit messages for Ethereum tokens",
-  "main": "dist/eth-permit.js",
-  "types": "dist/eth-permit.d.ts",
-  "author": "David Mihal <david@dmihal.com>",
+  "description": "Sign messages for Ethereum blockus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Santiago Cammi",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dmihal/eth-permit.git"
+    "url": "git+https://github.com/BlockUs0/signatures-type-data"
   },
   "bugs": {
-    "url": "https://github.com/dmihal/eth-permit/issues"
+    "url": "https://github.com/BlockUs0/signatures-type-data"
   },
   "scripts": {
     "build": "tsc",
@@ -23,13 +23,14 @@
     "@types/mocha": "^8.0.1",
     "@types/utf8": "^2.1.6",
     "chai": "^4.2.0",
-    "ethers": "5.7",
+    "ethers": "6.6.4",
     "mocha": "^8.1.1",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.7"
   },
   "dependencies": {
     "add": "^2.0.6",
+    "dotenv": "^16.4.5",
     "utf8": "^3.0.0",
     "yarn": "^1.22.22"
   }
